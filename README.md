@@ -68,7 +68,7 @@ flowchart LR
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/zalya/antigravity-telegram-bridge.git
+git clone https://github.com/kamil8819/antigravity-telegram-bridge.git
 cd antigravity-telegram-bridge
 pip install -r requirements.txt
 ```
