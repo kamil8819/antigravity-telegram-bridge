@@ -105,5 +105,5 @@ Open your Telegram bot on your phone, click **`/start`**, and send your first vo
 
 ## Author & License
 
-Developed with ❤️ by **Kamil Zalyaleev**.  
+Developed with ❤️ by **kam504**.  
 Released under the [MIT License](LICENSE).
