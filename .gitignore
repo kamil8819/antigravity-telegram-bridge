@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment and sensitive keys
+.env
+config.json
+bridge_config.json
+*.log
+
+# Media and temporary user uploads
+telegram_uploads/
+.user_uploaded/
+temp_voice/
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
