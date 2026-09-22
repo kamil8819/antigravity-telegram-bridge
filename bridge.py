@@ -9,8 +9,11 @@ import asyncio
 import urllib.request
 import urllib.error
 import aiohttp
+import ctypes
+import shutil
+from PIL import ImageGrab
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 
 # Загрузка переменных окружения из .env если доступен
 try:
@@ -172,6 +175,23 @@ def strip_all_markdown(text: str) -> str:
     return text.strip()
 
 async def send_clean_telegram_message(message: Message, text: str):
+    """Отправляет сообщение с идеальным форматированием, автоматически отправляя фото"""
+    img_matches = re.findall(r'!\[(.*?)\]\((.*?)\)', text)
+    for caption, img_path in img_matches:
+        clean_path = img_path.strip().lstrip('/')
+        if not os.path.exists(clean_path) and os.path.exists(img_path.strip()):
+            clean_path = img_path.strip()
+        if os.path.exists(clean_path):
+            try:
+                await message.answer_photo(FSInputFile(clean_path), caption=caption or None)
+                log(f"Фото отправлено в Telegram: {clean_path}")
+            except Exception as e:
+                log(f"Ошибка отправки фото {clean_path}: {e}")
+
+    text = re.sub(r'!\[.*?\]\(.*?\)', '', text).strip()
+    if not text:
+        return
+
     formatted = format_telegram_response(text)
     chunks = [formatted[i:i+4000] for i in range(0, len(formatted), 4000)] if len(formatted) > 4000 else [formatted]
     for chunk in chunks:
@@ -309,6 +329,39 @@ async def ensure_authorized(message: Message) -> bool:
         return False
     return True
 
+def record_screen_video_note(duration_sec=3) -> str:
+    """Записывает 3-секундный видео-кружок с экрана для Telegram"""
+    user32 = ctypes.windll.user32
+    hdesk = user32.OpenDesktopW('Default', 0, False, 0x0100)
+    user32.SetThreadDesktop(hdesk)
+    
+    tmp = os.path.join(WORKSPACE_DIR, "temp_vn")
+    os.makedirs(tmp, exist_ok=True)
+    num_frames = int(duration_sec * 6)
+    for i in range(num_frames):
+        im = ImageGrab.grab()
+        w, h = im.size
+        side = min(w, h)
+        left = (w - side) // 2
+        im.crop((left, 0, left + side, side)).resize((480, 480)).save(f"{tmp}/f_{i:03d}.jpg", quality=80)
+        time.sleep(0.15)
+        
+    out_path = os.path.join(WORKSPACE_DIR, "screen_note.mp4")
+    cmd = ['ffmpeg', '-y', '-framerate', '6', '-i', f"{tmp}/f_%03d.jpg", '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out_path]
+    subprocess.run(cmd, capture_output=True)
+    shutil.rmtree(tmp, ignore_errors=True)
+    return out_path
+
+def capture_screen_photo() -> str:
+    """Делает полноэкранный снимок рабочего стола"""
+    user32 = ctypes.windll.user32
+    hdesk = user32.OpenDesktopW('Default', 0, False, 0x0100)
+    user32.SetThreadDesktop(hdesk)
+    im = ImageGrab.grab()
+    path = os.path.join(WORKSPACE_DIR, "screen_shot.jpg")
+    im.save(path, quality=90)
+    return path
+
 @dp.message(F.text == "/start")
 async def cmd_start(message: Message):
     if await ensure_authorized(message):
@@ -320,9 +373,38 @@ async def cmd_start(message: Message):
             "• Текстовые сообщения\n"
             "• Голосовые команды (Whisper)\n"
             "• Фотографии и скриншоты (компьютерное зрение)\n"
-            "• Файлы и документы",
+            "• Файлы и документы\n"
+            "• 🎥 <b>Кружочки экрана</b>: напиши «кружок» или «видео»\n"
+            "• 📸 <b>Скриншот экрана</b>: напиши «скрин»\n\n"
+            "Диалог форматируется красиво и аккуратно.",
             parse_mode="HTML"
         )
+
+@dp.message(F.text.regexp(r"(?i)^(/circle|/video|/кружок|кружок|кружочек|видео|видеосообщение|покажи\s+экран)"))
+async def handle_video_note_request(message: Message, bot: Bot):
+    if not await ensure_authorized(message):
+        return
+    status_msg = await message.answer("🎥 Записываю видео-кружочек с экрана...")
+    try:
+        vn_path = await asyncio.to_thread(record_screen_video_note, 3)
+        await bot.send_video_note(chat_id=message.chat.id, video_note=FSInputFile(vn_path))
+        await status_msg.delete()
+    except Exception as e:
+        log(f"Ошибка записи кружочка: {e}")
+        await status_msg.edit_text(f"❌ Не удалось записать кружочек: {e}")
+
+@dp.message(F.text.regexp(r"(?i)^(/screen|/скрин|скрин|скриншот|экран|снимок)"))
+async def handle_screen_request(message: Message, bot: Bot):
+    if not await ensure_authorized(message):
+        return
+    status_msg = await message.answer("📸 Делаю снимок экрана...")
+    try:
+        photo_path = await asyncio.to_thread(capture_screen_photo)
+        await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile(photo_path), caption="🖥 Текущий снимок экрана")
+        await status_msg.delete()
+    except Exception as e:
+        log(f"Ошибка создания скриншота: {e}")
+        await status_msg.edit_text(f"❌ Не удалось сделать скриншот: {e}")
 
 @dp.message(F.photo)
 async def handle_photo_msg(message: Message, bot: Bot):

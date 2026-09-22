@@ -21,6 +21,8 @@
 
 - 🎙 **Instant Voice Coding (Whisper)**: Dictate prompts on the go from taxi, gym, or walking. Voice messages are transcribed in **0.3s** via Groq Whisper-large-v3.
 - 📸 **Multimodal Vision**: Send photos, drawings, schematics, or error screenshots from your phone camera. Antigravity's vision model analyzes them immediately.
+- 🎥 **Telegram Video Notes ("Кружочки")**: Send `кружок` or `/video` from your phone to receive a 3-second live 1:1 round video note screencast of your desktop!
+- 🖥 **Instant Screenshots**: Send `скрин` or `/screen` to get an instant high-resolution screenshot of your PC.
 - ⚡ **Direct IDE Injection**: Communicates directly with the live Antigravity `language_server.exe` through internal Connect-RPC (`SendUserCascadeMessage`). Your messages appear in the IDE chat in real time!
 - 🔄 **Auto-Discovery**: Automatically discovers dynamic ports and CSRF tokens across Antigravity restarts. Zero maintenance needed.
 - 🧼 **Clean Formatting**: Strips raw Markdown debris (`###`, `---`, `**`, `<kbd>`) and formats responses into clean, beautiful Telegram messages.
@@ -96,6 +98,8 @@ Open your Telegram bot on your phone, click **`/start`**, and send your first vo
 
 - **Голосовое управление на ходу**: надиктовывайте задачи голосом из такси или спортзала — бот расшифровывает их через Whisper за доли секунды и передает агенту на компьютере.
 - **Анализ фото и чертежей**: отправьте фото детали, мебели, схемы или снимок экрана с ошибкой — агент изучит изображение через компьютерное зрение.
+- **Видео-кружочки экрана («Кружочки»)**: напишите боту «кружок» или «видео» — он запишет 3-секундный живой скринкаст экрана 1:1 и пришлет в Telegram как видеосообщение.
+- **Скриншоты по запросу**: напишите «скрин» или «экран» — бот пришлет четкий снимок рабочего стола.
 - **Прямое подключение к IDE**: в отличие от сторонних ботов, этот мост подключается к **уже открытому диалогу Antigravity** через внутренний протокол `SendUserCascadeMessage`.
 - **Автоопределение портов**: при перезапуске Antigravity скрипт сам находит новый порт и CSRF-токен ядра — связь не теряется.
 - **Красивый диалог**: никаких сырых решеток `###` и звездочек `**` — сообщения форматируются в аккуратный человеческий стиль для мессенджера.
