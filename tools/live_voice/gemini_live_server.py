@@ -478,25 +478,57 @@ async def handle_ws_live(request):
 
     return ws
 
-def setup_tunnel_and_get_url(port: int = 8765):
-    """Настройка туннеля для Telegram Mini App (через SSH VPS или локальный cloudflared)"""
+_tunnel_proc = None
+
+async def maintain_tunnel_loop(port: int = 8765):
+    """Фоновый автореконнект туннеля при любых разрывах связи"""
+    global _tunnel_proc
     ssh_host = os.environ.get("SSH_TUNNEL_HOST")
     if ssh_host:
         ssh_cmd = [
             "ssh", "-o", "ConnectTimeout=8", "-o", "StrictHostKeyChecking=no",
-            "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=3",
+            "-o", "ServerAliveInterval=10", "-o", "ServerAliveCountMax=3",
+            "-o", "ExitOnForwardFailure=yes",
             "-N", "-R", f"{port}:127.0.0.1:{port}",
             ssh_host
         ]
-        print(f"[Tunnel] Starting reverse SSH tunnel to {ssh_host}...")
-        proc = subprocess.Popen(ssh_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        time.sleep(2)
+        while True:
+            try:
+                if _tunnel_proc is None or _tunnel_proc.poll() is not None:
+                    if _tunnel_proc is not None:
+                        print(f"[Tunnel Supervisor] SSH tunnel died (code={_tunnel_proc.poll()}). Auto-reconnecting in 2s...")
+                    else:
+                        print(f"[Tunnel Supervisor] Starting SSH tunnel to {ssh_host}...")
+                    _tunnel_proc = subprocess.Popen(ssh_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception as e:
+                print(f"[Tunnel Supervisor Error]: {e}")
+            await asyncio.sleep(3)
+    else:
+        # Fallback to local cloudflared
+        cf_bin = "cloudflared"
+        import shutil
+        for candidate in [os.path.join(ROOT_DIR, "cloudflared.exe"), "cloudflared.exe", "cloudflared"]:
+            if os.path.exists(candidate) or shutil.which(candidate):
+                cf_bin = candidate
+                break
+        cmd = [cf_bin, "tunnel", "--url", f"http://127.0.0.1:{port}"]
+        while True:
+            try:
+                if _tunnel_proc is None or _tunnel_proc.poll() is not None:
+                    _tunnel_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="ignore")
+            except Exception as e:
+                print(f"[Tunnel Supervisor Error]: {e}")
+            await asyncio.sleep(5)
+
+def get_tunnel_url():
+    """Получение актуального Cloudflare URL"""
+    ssh_host = os.environ.get("SSH_TUNNEL_HOST")
+    if ssh_host:
         try:
             url_cmd = ['ssh', '-o', 'ConnectTimeout=5', ssh_host, "grep -oE 'https://[a-zA-Z0-9-]+\\.trycloudflare\\.com' /var/log/cloudflared-live.log | tail -n 1"]
             res = subprocess.run(url_cmd, capture_output=True, text=True, timeout=8)
             url = res.stdout.strip()
             if url:
-                print(f"[Tunnel] [OK] Cloudflare Mini App URL: {url}")
                 with open(TUNNEL_URL_FILE, "w", encoding="utf-8") as f:
                     f.write(url)
                 if os.path.exists(CONFIG_PATH):
@@ -506,54 +538,12 @@ def setup_tunnel_and_get_url(port: int = 8765):
                         cfg["live_webapp_url"] = url
                         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
                             json.dump(cfg, f, ensure_ascii=False, indent=2)
-                        print("[Config] Updated live_webapp_url in config")
-                    except Exception as e:
-                        print(f"[Config] Error: {e}")
-                return proc, url
+                    except Exception:
+                        pass
+                return url
         except Exception as e:
             print(f"[Tunnel] Failed to retrieve remote tunnel URL: {e}")
-        return proc, None
-
-    # Fallback to local cloudflared tunnel
-    cf_bin = "cloudflared"
-    import shutil
-    for candidate in [os.path.join(ROOT_DIR, "cloudflared.exe"), "cloudflared.exe", "cloudflared"]:
-        if os.path.exists(candidate) or shutil.which(candidate):
-            cf_bin = candidate
-            break
-
-    try:
-        cmd = [cf_bin, "tunnel", "--url", f"http://127.0.0.1:{port}"]
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="ignore")
-        url = None
-        start_t = time.time()
-        while time.time() - start_t < 15:
-            line = proc.stderr.readline()
-            if not line:
-                time.sleep(0.1)
-                continue
-            m = re.search(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com', line)
-            if m:
-                url = m.group(0)
-                break
-        if url:
-            print(f"[Tunnel] [OK] Cloudflare Quick Tunnel URL: {url}")
-            with open(TUNNEL_URL_FILE, "w", encoding="utf-8") as f:
-                f.write(url)
-            if os.path.exists(CONFIG_PATH):
-                try:
-                    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-                        cfg = json.load(f)
-                    cfg["live_webapp_url"] = url
-                    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-                        json.dump(cfg, f, ensure_ascii=False, indent=2)
-                except Exception:
-                    pass
-            return proc, url
-    except Exception as e:
-        print(f"[Tunnel] Local cloudflared failed: {e}")
-
-    return None, None
+    return None
 
 async def main_async():
     # 1. Setup proxy monkeypatching
@@ -573,7 +563,10 @@ async def main_async():
     await site.start()
     print(f"[LIVE] Web server running on http://{HOST}:{PORT}")
 
-    tunnel_proc, tunnel_url = setup_tunnel_and_get_url(PORT)
+    # 3. Launch continuous tunnel supervisor
+    tunnel_task = asyncio.create_task(maintain_tunnel_loop(PORT))
+    await asyncio.sleep(2)
+    tunnel_url = get_tunnel_url()
 
     print("=======================================================")
     print("  [LIVE VOICE] Antigravity Full-Duplex Server Ready")
@@ -586,8 +579,12 @@ async def main_async():
         while True:
             await asyncio.sleep(3600)
     finally:
-        if tunnel_proc:
-            tunnel_proc.terminate()
+        tunnel_task.cancel()
+        if _tunnel_proc:
+            try:
+                _tunnel_proc.terminate()
+            except Exception:
+                pass
         await runner.cleanup()
 
 def main():
