@@ -160,6 +160,13 @@
       isAiSpeaking = false;
       activityState.textContent = 'Слушаю вас...';
       orbCore.style.transform = 'scale(1.0)';
+    } else if (msg.type === 'tool_active') {
+      if (msg.tool === 'search') {
+        activityState.textContent = '🔍 Ищу в сети: ' + msg.detail;
+      } else if (msg.tool === 'browse') {
+        activityState.textContent = '🌐 Читаю страницу: ' + msg.detail;
+      }
+      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     } else if (msg.type === 'task_dispatched') {
       activityState.textContent = '💻 Задача отправлена в Antigravity!';
       if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');

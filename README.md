@@ -22,9 +22,10 @@
 
 ### 🎙 Full-Duplex Live Voice Assistant (Gemini 3.8 Live Mini App)
 - **Real-Time Spoken Dialogue**: Experience true full-duplex conversational voice mode directly inside Telegram via an interactive Telegram Mini App.
+- **🌐 Real-Time Web Search & Browsing**: The voice assistant has integrated real-time internet search and webpage browsing tools (`search_web` & `browse_page`). Ask about current bitcoin prices, currency exchange rates, breaking news, weather, or give it a URL to read — it searches live and voices the answer in seconds!
 - **Ultra-Low Latency (~300ms)**: Sub-second voice responses powered by Google Gemini 3.8 Live WebSocket API (`audio/pcm;rate=16000` in, `audio/pcm;rate=24000` out).
 - **Natural Interruptions**: Interrupt the assistant mid-sentence naturally without waiting for turns to finish.
-- **Interactive UI**: Dark glassmorphic interface with reactive 3D voice visualizer orb, live speech-to-text transcripts, and mute controls.
+- **Interactive UI**: Dark glassmorphic interface with reactive 3D voice visualizer orb, live speech-to-text transcripts, real-time search status indicator, and mute controls.
 - **IDE Code Dispatch**: Speak commands like *"create database migration"* or *"check project tests"* — the assistant confirms via voice and dispatches the task straight into active Antigravity IDE!
 
 ### 📱 Telegram Remote Control Suite
