@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Antigravity Live Voice</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span class="brand-title">Antigravity Live</span>
+      </div>
+      <div id="statusPill" class="status-pill status-connecting">
+        <span class="status-indicator"></span>
+        <span id="statusText" class="status-label">Подключение...</span>
+      </div>
+    </header>
+
+    <!-- Main Visualizer Area -->
+    <main class="visualizer-container">
+      <div class="orb-wrapper" id="orbWrapper">
+        <div class="orb-glow-outer"></div>
+        <div class="orb-glow-middle"></div>
+        <div class="orb-core" id="orbCore"></div>
+        <div class="orb-ring" id="orbRing"></div>
+      </div>
+      <div id="activityState" class="activity-state">Инициализация микрофона...</div>
+    </main>
+
+    <!-- Subtitles / Captions -->
+    <section class="transcript-section">
+      <div class="transcript-box" id="transcriptBox">
+        <div id="userTranscript" class="transcript-bubble user-bubble empty">
+          <span class="bubble-sender">Вы:</span>
+          <span class="bubble-text" id="userText">Говорите...</span>
+        </div>
+        <div id="aiTranscript" class="transcript-bubble ai-bubble empty">
+          <span class="bubble-sender">Antigravity:</span>
+          <span class="bubble-text" id="aiText">Слушаю вас в реальном времени</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Controls Bar -->
+    <footer class="controls-bar">
+      <!-- Sync with Antigravity toggle -->
+      <div class="sync-indicator-row">
+        <label class="switch-container">
+          <input type="checkbox" id="syncToggle" checked>
+          <span class="switch-slider"></span>
+          <span class="switch-label">💻 Автосинхронизация с кодом Antigravity</span>
+        </label>
+      </div>
+
+      <div class="buttons-grid">
+        <!-- Mic button -->
+        <button id="micBtn" class="control-btn mic-btn active" title="Микрофон">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
+          <span class="btn-label">Микрофон</span>
+        </button>
+
+        <!-- Speaker toggle -->
+        <button id="speakerBtn" class="control-btn speaker-btn active" title="Динамик">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+          <span class="btn-label">Звук</span>
+        </button>
+
+        <!-- Dispatch Task Button -->
+        <button id="dispatchBtn" class="control-btn dispatch-btn" title="Отправить в чат">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+          <span class="btn-label">В код</span>
+        </button>
+
+        <!-- End Call button -->
+        <button id="endCallBtn" class="control-btn end-btn" title="Завершить разговор">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/>
+          </svg>
+          <span class="btn-label">Завершить</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

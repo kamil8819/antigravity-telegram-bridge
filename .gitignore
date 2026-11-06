@@ -3,18 +3,31 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Environment and sensitive keys
+# Environment & Private Configs (Never commit secrets)
 .env
+.env.*
+!.env.example
 config.json
 bridge_config.json
 *.log
+tunnel_url.txt
 
 # Media and temporary user uploads
 telegram_uploads/
 .user_uploaded/
 temp_voice/
+backups/
+*.ogg
+*.wav
+*.mp4
+*.jpg
+*.png
 
-# Environments
+# Binary executables
+*.exe
+cloudflared
+
+# Virtual Environments
 .venv/
 venv/
 ENV/
